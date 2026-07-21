@@ -36,22 +36,33 @@ export default async function handler(
       });
     }
 
-    // Initialize Supabase
+    // Initialize Supabase with fresh client
     const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
-    const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+    const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
 
-    if (!supabaseUrl || !supabaseServiceKey) {
+    if (!supabaseUrl || !supabaseKey) {
       console.error('Missing Supabase credentials');
+      console.error('SUPABASE_URL:', supabaseUrl ? 'set' : 'NOT SET');
+      console.error('SERVICE_ROLE_KEY:', supabaseKey ? 'set' : 'NOT SET');
       return res.status(500).json({ 
         success: false, 
-        message: 'Server configuration error: Missing Supabase credentials' 
+        message: 'Server configuration error' 
       });
     }
 
-    const supabaseAdmin = createClient(supabaseUrl, supabaseServiceKey);
+    console.log('Connecting to Supabase:', supabaseUrl);
+
+    const supabase = createClient(supabaseUrl, supabaseKey, {
+      auth: {
+        autoRefreshToken: false,
+        persistSession: false,
+      },
+    });
+
+    console.log('Attempting to insert product:', { title, category, price });
 
     // Insert product
-    const { data, error } = await supabaseAdmin
+    const { data, error } = await supabase
       .from('products')
       .insert([
         {
@@ -67,11 +78,14 @@ export default async function handler(
       ])
       .select();
 
+    console.log('Insert response - Error:', error);
+    console.log('Insert response - Data:', data);
+
     if (error) {
       console.error('Supabase insert error:', error);
       return res.status(400).json({ 
         success: false, 
-        message: `Database error: ${error.message}` 
+        message: `Error: ${error.message || 'Failed to insert product'}` 
       });
     }
 
@@ -80,23 +94,6 @@ export default async function handler(
         success: false, 
         message: 'Product was not created' 
       });
-    }
-
-    // Insert product image if provided
-    if (image_url && data[0]) {
-      const { error: imageError } = await supabaseAdmin
-        .from('product_images')
-        .insert([
-          {
-            product_id: data[0].id,
-            image_url,
-            is_primary: true,
-          },
-        ]);
-
-      if (imageError) {
-        console.error('Image insert error:', imageError);
-      }
     }
 
     res.status(201).json({ 
@@ -108,7 +105,7 @@ export default async function handler(
     console.error('API Error:', error);
     res.status(500).json({ 
       success: false, 
-      message: `Server error: ${error.message || 'Unknown error'}` 
+      message: `Error: ${error.message || 'Unknown error'}` 
     });
   }
 }
