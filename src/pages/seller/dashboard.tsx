@@ -1,7 +1,20 @@
 import React, { useState, useEffect } from 'react';
 
+interface Product {
+  id: string;
+  title: string;
+  description: string;
+  category: string;
+  price: number;
+  currency: string;
+  status: 'pending' | 'approved' | 'rejected' | 'archived';
+  created_at: string;
+}
+
 export default function SellerDashboard() {
-  const [products, setProducts] = useState([]);
+  const [products, setProducts] = useState<Product[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState('');
   const [stats, setStats] = useState({
     total: 0,
     pending: 0,
@@ -9,13 +22,62 @@ export default function SellerDashboard() {
   });
 
   useEffect(() => {
-    // Fetch seller products and stats
-    setStats({
-      total: 0,
-      pending: 0,
-      approved: 0,
-    });
+    const fetchProducts = async () => {
+      try {
+        setLoading(true);
+        const seller_id = localStorage.getItem('seller_id');
+        
+        if (!seller_id) {
+          setError('No seller ID found. Please create a product first.');
+          setLoading(false);
+          return;
+        }
+
+        const response = await fetch(`/api/products/get-seller-products?seller_id=${seller_id}`);
+        
+        if (!response.ok) {
+          throw new Error('Failed to fetch products');
+        }
+
+        const result = await response.json();
+
+        if (result.success && result.data) {
+          setProducts(result.data);
+
+          // Calculate stats
+          const total = result.data.length;
+          const pending = result.data.filter((p: Product) => p.status === 'pending').length;
+          const approved = result.data.filter((p: Product) => p.status === 'approved').length;
+
+          setStats({
+            total,
+            pending,
+            approved,
+          });
+        }
+      } catch (err: any) {
+        console.error('Error fetching products:', err);
+        setError(err.message || 'Failed to load products');
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchProducts();
   }, []);
+
+  const getStatusColor = (status: string) => {
+    switch (status) {
+      case 'pending':
+        return '#FFA500';
+      case 'approved':
+        return '#22c55e';
+      case 'rejected':
+        return '#ef4444';
+      default:
+        return '#6B7280';
+    }
+  };
 
   return (
     <div className="min-h-screen bg-white">
@@ -79,7 +141,23 @@ export default function SellerDashboard() {
           <h2 className="text-2xl font-bold mb-6" style={{ color: '#683837' }}>
             Your Products
           </h2>
-          {products.length === 0 ? (
+
+          {loading ? (
+            <div className="text-center py-12">
+              <p className="text-gray-600">Loading products...</p>
+            </div>
+          ) : error ? (
+            <div className="text-center py-12">
+              <p className="text-red-600 mb-4">{error}</p>
+              <a
+                href="/seller/products/new"
+                className="inline-block text-white px-8 py-3 rounded-lg font-semibold transition-all hover:scale-105"
+                style={{ backgroundColor: '#C18F4C' }}
+              >
+                Create Your First Product
+              </a>
+            </div>
+          ) : products.length === 0 ? (
             <div className="text-center py-12">
               <p className="text-gray-600 text-lg mb-4">No products yet. Start by adding your first product!</p>
               <a
@@ -108,12 +186,49 @@ export default function SellerDashboard() {
                       Status
                     </th>
                     <th className="text-left py-3 px-4 font-semibold" style={{ color: '#683837' }}>
+                      Created
+                    </th>
+                    <th className="text-left py-3 px-4 font-semibold" style={{ color: '#683837' }}>
                       Actions
                     </th>
                   </tr>
                 </thead>
                 <tbody>
-                  {/* Products would be mapped here */}
+                  {products.map((product) => (
+                    <tr key={product.id} className="border-b hover:bg-gray-50">
+                      <td className="py-4 px-4">
+                        <div>
+                          <p className="font-medium text-gray-900">{product.title}</p>
+                          <p className="text-sm text-gray-500">{product.description.substring(0, 50)}...</p>
+                        </div>
+                      </td>
+                      <td className="py-4 px-4 text-gray-700 capitalize">
+                        {product.category}
+                      </td>
+                      <td className="py-4 px-4 font-medium">
+                        {product.currency} {product.price}
+                      </td>
+                      <td className="py-4 px-4">
+                        <span
+                          className="px-3 py-1 rounded-full text-xs font-semibold text-white capitalize"
+                          style={{ backgroundColor: getStatusColor(product.status) }}
+                        >
+                          {product.status}
+                        </span>
+                      </td>
+                      <td className="py-4 px-4 text-gray-700 text-sm">
+                        {new Date(product.created_at).toLocaleDateString()}
+                      </td>
+                      <td className="py-4 px-4">
+                        <button
+                          className="text-white px-4 py-1 rounded text-sm font-semibold transition-all hover:scale-105"
+                          style={{ backgroundColor: '#C18F4C' }}
+                        >
+                          Edit
+                        </button>
+                      </td>
+                    </tr>
+                  ))}
                 </tbody>
               </table>
             </div>
