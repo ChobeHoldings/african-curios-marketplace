@@ -29,7 +29,6 @@ export default function AddProduct() {
     setSuccess('');
 
     try {
-      // For now, use a test seller_id. In production, this would come from authentication
       const seller_id = localStorage.getItem('seller_id') || 'seller_' + Date.now();
       
       const response = await fetch('/api/products/create', {
@@ -59,7 +58,6 @@ export default function AddProduct() {
         currency: 'USD',
       });
 
-      // Redirect to seller dashboard after 2 seconds
       setTimeout(() => {
         router.push('/seller/dashboard');
       }, 2000);
@@ -71,14 +69,14 @@ export default function AddProduct() {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-slate-900 via-slate-800 to-slate-900 text-white">
+    <div className="min-h-screen bg-white text-gray-900">
       {/* Navigation */}
-      <nav className="sticky top-0 z-50 backdrop-blur-md bg-slate-900/80 border-b border-orange-500/20">
+      <nav className="sticky top-0 z-50 bg-white border-b border-gray-200 shadow-sm" style={{ borderBottomColor: '#C18F4C' }}>
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 flex items-center gap-4">
-          <a href="/seller/dashboard" className="text-gray-300 hover:text-orange-400 transition-colors">
-            ← Back
+          <a href="/seller/dashboard" className="font-semibold transition-colors" style={{ color: '#C18F4C' }}>
+            ← Back to Dashboard
           </a>
-          <h1 className="text-2xl font-bold bg-gradient-to-r from-orange-400 to-orange-600 bg-clip-text text-transparent">
+          <h1 className="text-2xl font-bold" style={{ color: '#683837' }}>
             Add New Product
           </h1>
         </div>
@@ -87,42 +85,48 @@ export default function AddProduct() {
       <main className="max-w-2xl mx-auto px-4 py-8">
         {/* Success Message */}
         {success && (
-          <div className="mb-6 p-4 rounded-lg bg-green-500/20 border border-green-500/50 text-green-300">
+          <div className="mb-6 p-4 rounded-lg border-l-4 text-green-800" style={{ backgroundColor: '#f0fdf4', borderColor: '#22c55e' }}>
             {success}
           </div>
         )}
 
         {/* Error Message */}
         {error && (
-          <div className="mb-6 p-4 rounded-lg bg-red-500/20 border border-red-500/50 text-red-300">
+          <div className="mb-6 p-4 rounded-lg border-l-4 text-red-800" style={{ backgroundColor: '#fef2f2', borderColor: '#ef4444' }}>
             {error}
           </div>
         )}
 
-        <form onSubmit={handleSubmit} className="bg-gradient-to-br from-slate-800 to-slate-800/50 p-8 rounded-2xl shadow-lg border border-orange-500/20">
+        <form onSubmit={handleSubmit} className="bg-white p-8 rounded-lg shadow-md border-t-4" style={{ borderTopColor: '#C18F4C' }}>
           {/* Title */}
           <div className="mb-6">
-            <label className="block text-gray-300 font-semibold mb-2">Product Title *</label>
+            <label className="block font-semibold mb-2" style={{ color: '#683837' }}>Product Title *</label>
             <input
               type="text"
               name="title"
               value={formData.title}
               onChange={handleChange}
               placeholder="e.g., Handwoven Kente Cloth"
-              className="w-full px-4 py-3 bg-slate-700/50 border border-orange-500/30 rounded-lg focus:outline-none focus:border-orange-500 text-white placeholder-gray-400 transition-colors"
+              className="w-full px-4 py-3 border-2 rounded-lg focus:outline-none text-gray-900 placeholder-gray-400 transition-colors"
+              style={{ borderColor: '#C18F4C' }}
+              onFocus={(e) => e.target.style.borderColor = '#683837'}
+              onBlur={(e) => e.target.style.borderColor = '#C18F4C'}
               required
             />
           </div>
 
           {/* Description */}
           <div className="mb-6">
-            <label className="block text-gray-300 font-semibold mb-2">Description *</label>
+            <label className="block font-semibold mb-2" style={{ color: '#683837' }}>Description *</label>
             <textarea
               name="description"
               value={formData.description}
               onChange={handleChange}
               placeholder="Tell the story of your product. What makes it special? What materials are used?"
-              className="w-full px-4 py-3 bg-slate-700/50 border border-orange-500/30 rounded-lg focus:outline-none focus:border-orange-500 text-white placeholder-gray-400 h-32 transition-colors resize-none"
+              className="w-full px-4 py-3 border-2 rounded-lg focus:outline-none text-gray-900 placeholder-gray-400 h-32 transition-colors resize-none"
+              style={{ borderColor: '#C18F4C' }}
+              onFocus={(e) => e.target.style.borderColor = '#683837'}
+              onBlur={(e) => e.target.style.borderColor = '#C18F4C'}
               required
             />
           </div>
@@ -130,12 +134,15 @@ export default function AddProduct() {
           {/* Category and Price */}
           <div className="grid grid-cols-2 gap-4 mb-6">
             <div>
-              <label className="block text-gray-300 font-semibold mb-2">Category *</label>
+              <label className="block font-semibold mb-2" style={{ color: '#683837' }}>Category *</label>
               <select
                 name="category"
                 value={formData.category}
                 onChange={handleChange}
-                className="w-full px-4 py-3 bg-slate-700/50 border border-orange-500/30 rounded-lg focus:outline-none focus:border-orange-500 text-white transition-colors"
+                className="w-full px-4 py-3 border-2 rounded-lg focus:outline-none text-gray-900 transition-colors"
+                style={{ borderColor: '#C18F4C' }}
+                onFocus={(e) => e.target.style.borderColor = '#683837'}
+                onBlur={(e) => e.target.style.borderColor = '#C18F4C'}
                 required
               >
                 <option value="">Select category...</option>
@@ -149,7 +156,7 @@ export default function AddProduct() {
               </select>
             </div>
             <div>
-              <label className="block text-gray-300 font-semibold mb-2">Price *</label>
+              <label className="block font-semibold mb-2" style={{ color: '#683837' }}>Price *</label>
               <input
                 type="number"
                 name="price"
@@ -158,7 +165,10 @@ export default function AddProduct() {
                 placeholder="0.00"
                 step="0.01"
                 min="0"
-                className="w-full px-4 py-3 bg-slate-700/50 border border-orange-500/30 rounded-lg focus:outline-none focus:border-orange-500 text-white placeholder-gray-400 transition-colors"
+                className="w-full px-4 py-3 border-2 rounded-lg focus:outline-none text-gray-900 placeholder-gray-400 transition-colors"
+                style={{ borderColor: '#C18F4C' }}
+                onFocus={(e) => e.target.style.borderColor = '#683837'}
+                onBlur={(e) => e.target.style.borderColor = '#C18F4C'}
                 required
               />
             </div>
@@ -166,12 +176,15 @@ export default function AddProduct() {
 
           {/* Currency */}
           <div className="mb-6">
-            <label className="block text-gray-300 font-semibold mb-2">Currency</label>
+            <label className="block font-semibold mb-2" style={{ color: '#683837' }}>Currency</label>
             <select
               name="currency"
               value={formData.currency}
               onChange={handleChange}
-              className="w-full px-4 py-3 bg-slate-700/50 border border-orange-500/30 rounded-lg focus:outline-none focus:border-orange-500 text-white transition-colors"
+              className="w-full px-4 py-3 border-2 rounded-lg focus:outline-none text-gray-900 transition-colors"
+              style={{ borderColor: '#C18F4C' }}
+              onFocus={(e) => e.target.style.borderColor = '#683837'}
+              onBlur={(e) => e.target.style.borderColor = '#C18F4C'}
             >
               <option value="USD">USD ($)</option>
               <option value="EUR">EUR (€)</option>
@@ -186,12 +199,13 @@ export default function AddProduct() {
           <button
             type="submit"
             disabled={loading}
-            className="w-full bg-gradient-to-r from-orange-500 to-orange-600 hover:from-orange-600 hover:to-orange-700 disabled:from-gray-600 disabled:to-gray-600 text-white py-3 rounded-lg font-bold transition-all duration-200 transform hover:scale-105 disabled:scale-100 shadow-lg shadow-orange-500/50"
+            className="w-full text-white py-3 rounded-lg font-bold transition-all duration-200 transform hover:scale-105 disabled:scale-100 shadow-md"
+            style={{ backgroundColor: loading ? '#999' : '#C18F4C' }}
           >
             {loading ? '⏳ Creating Product...' : '✨ Submit for Review'}
           </button>
 
-          <p className="text-gray-400 text-sm mt-4 text-center">
+          <p className="text-gray-600 text-sm mt-4 text-center">
             Your product will be reviewed by our team before it goes live.
           </p>
         </form>
