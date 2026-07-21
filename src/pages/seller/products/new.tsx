@@ -1,11 +1,14 @@
-import React, { useState } from 'react';
+import React, { useState, useRef } from 'react';
 import { useRouter } from 'next/router';
 
 export default function AddProduct() {
   const router = useRouter();
+  const fileInputRef = useRef<HTMLInputElement>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
+  const [imagePreview, setImagePreview] = useState('');
+  const [imageFile, setImageFile] = useState<File | null>(null);
   
   const [formData, setFormData] = useState({
     title: '',
@@ -19,6 +22,42 @@ export default function AddProduct() {
     setFormData({
       ...formData,
       [e.target.name]: e.target.value,
+    });
+  };
+
+  const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      // Validate file type
+      if (!file.type.startsWith('image/')) {
+        setError('Please select a valid image file');
+        return;
+      }
+
+      // Validate file size (5MB max)
+      if (file.size > 5 * 1024 * 1024) {
+        setError('Image size must be less than 5MB');
+        return;
+      }
+
+      setImageFile(file);
+      setError('');
+
+      // Create preview
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setImagePreview(reader.result as string);
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+
+  const convertImageToBase64 = (file: File): Promise<string> => {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.readAsDataURL(file);
+      reader.onload = () => resolve(reader.result as string);
+      reader.onerror = error => reject(error);
     });
   };
 
@@ -42,9 +81,20 @@ export default function AddProduct() {
       if (!formData.price || parseFloat(formData.price) <= 0) {
         throw new Error('Valid price is required');
       }
+      if (!imageFile) {
+        throw new Error('Product image is required');
+      }
 
       const seller_id = localStorage.getItem('seller_id') || 'seller_' + Date.now();
       localStorage.setItem('seller_id', seller_id);
+
+      // Convert image to base64
+      let imageUrl = '';
+      try {
+        imageUrl = await convertImageToBase64(imageFile);
+      } catch (err) {
+        throw new Error('Failed to process image');
+      }
       
       const response = await fetch('/api/products/create', {
         method: 'POST',
@@ -57,6 +107,7 @@ export default function AddProduct() {
           category: formData.category,
           price: parseFloat(formData.price),
           currency: formData.currency,
+          image_url: imageUrl,
           seller_id,
         }),
       });
@@ -83,6 +134,8 @@ export default function AddProduct() {
         price: '',
         currency: 'USD',
       });
+      setImageFile(null);
+      setImagePreview('');
 
       setTimeout(() => {
         router.push('/seller/dashboard');
@@ -125,6 +178,46 @@ export default function AddProduct() {
         )}
 
         <form onSubmit={handleSubmit} className="bg-white p-8 rounded-lg shadow-md border-t-4" style={{ borderTopColor: '#C18F4C' }}>
+          {/* Product Image Upload */}
+          <div className="mb-6">
+            <label className="block font-semibold mb-2" style={{ color: '#683837' }}>Product Image *</label>
+            <div
+              className="border-2 border-dashed rounded-lg p-6 text-center cursor-pointer transition-colors hover:opacity-80"
+              style={{ borderColor: '#C18F4C', backgroundColor: imagePreview ? 'transparent' : '#fafaf8' }}
+              onClick={() => fileInputRef.current?.click()}
+            >
+              {imagePreview ? (
+                <div>
+                  <img
+                    src={imagePreview}
+                    alt="Preview"
+                    className="mx-auto h-40 w-40 object-cover rounded-lg mb-4"
+                  />
+                  <p className="text-sm font-medium" style={{ color: '#683837' }}>
+                    Click to change image
+                  </p>
+                </div>
+              ) : (
+                <div>
+                  <p className="text-2xl mb-2">📸</p>
+                  <p className="font-medium" style={{ color: '#683837' }}>
+                    Click to upload image or drag and drop
+                  </p>
+                  <p className="text-sm text-gray-500 mt-1">
+                    PNG, JPG, GIF up to 5MB
+                  </p>
+                </div>
+              )}
+              <input
+                ref={fileInputRef}
+                type="file"
+                accept="image/*"
+                onChange={handleImageChange}
+                className="hidden"
+              />
+            </div>
+          </div>
+
           {/* Title */}
           <div className="mb-6">
             <label className="block font-semibold mb-2" style={{ color: '#683837' }}>Product Title *</label>
