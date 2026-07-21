@@ -1,5 +1,5 @@
 import type { NextApiRequest, NextApiResponse } from 'next';
-import { supabaseAdmin } from '@/lib/supabase';
+import { createClient } from '@supabase/supabase-js';
 
 type ResponseData = {
   success: boolean;
@@ -11,9 +11,6 @@ export default async function handler(
   req: NextApiRequest,
   res: NextApiResponse<ResponseData>
 ) {
-  // Allow all HTTP methods during development
-  // In production, restrict to specific methods
-
   try {
     // CORS headers
     res.setHeader('Access-Control-Allow-Origin', '*');
@@ -31,19 +28,38 @@ export default async function handler(
 
     const { title, description, category, price, currency, image_url, seller_id } = req.body;
 
+    // Validate required fields
     if (!title || !description || !price || !category || !seller_id) {
-      return res.status(400).json({ success: false, message: 'Missing required fields' });
+      return res.status(400).json({ 
+        success: false, 
+        message: 'Missing required fields: title, description, price, category, seller_id' 
+      });
     }
 
+    // Initialize Supabase
+    const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
+    const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+
+    if (!supabaseUrl || !supabaseServiceKey) {
+      console.error('Missing Supabase credentials');
+      return res.status(500).json({ 
+        success: false, 
+        message: 'Server configuration error: Missing Supabase credentials' 
+      });
+    }
+
+    const supabaseAdmin = createClient(supabaseUrl, supabaseServiceKey);
+
+    // Insert product
     const { data, error } = await supabaseAdmin
       .from('products')
       .insert([
         {
-          title,
-          description,
-          original_description: description,
+          title: title.trim(),
+          description: description.trim(),
+          original_description: description.trim(),
           category,
-          price,
+          price: parseFloat(price),
           currency: currency || 'USD',
           seller_id,
           status: 'pending',
@@ -51,11 +67,24 @@ export default async function handler(
       ])
       .select();
 
-    if (error) throw error;
+    if (error) {
+      console.error('Supabase insert error:', error);
+      return res.status(400).json({ 
+        success: false, 
+        message: `Database error: ${error.message}` 
+      });
+    }
 
-    // Insert product image
-    if (image_url && data && data[0]) {
-      await supabaseAdmin
+    if (!data || data.length === 0) {
+      return res.status(500).json({ 
+        success: false, 
+        message: 'Product was not created' 
+      });
+    }
+
+    // Insert product image if provided
+    if (image_url && data[0]) {
+      const { error: imageError } = await supabaseAdmin
         .from('product_images')
         .insert([
           {
@@ -64,11 +93,22 @@ export default async function handler(
             is_primary: true,
           },
         ]);
+
+      if (imageError) {
+        console.error('Image insert error:', imageError);
+      }
     }
 
-    res.status(201).json({ success: true, message: 'Product created', data: data?.[0] });
+    res.status(201).json({ 
+      success: true, 
+      message: 'Product created successfully! It will be reviewed by our team.', 
+      data: data[0] 
+    });
   } catch (error: any) {
-    console.error('Error:', error);
-    res.status(500).json({ success: false, message: error.message });
+    console.error('API Error:', error);
+    res.status(500).json({ 
+      success: false, 
+      message: `Server error: ${error.message || 'Unknown error'}` 
+    });
   }
 }
