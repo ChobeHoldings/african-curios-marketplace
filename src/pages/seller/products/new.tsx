@@ -43,8 +43,7 @@ export default function AddProduct() {
         throw new Error('Valid price is required');
       }
 
-      const seller_id = localStorage.getItem('seller_id') || 'seller_' + Date.now();
-      localStorage.setItem('seller_id', seller_id);
+      const seller_id = localStorage.getItem('seller_id');
       
       const response = await fetch('/api/products/create', {
         method: 'POST',
@@ -57,7 +56,7 @@ export default function AddProduct() {
           category: formData.category,
           price: parseFloat(formData.price),
           currency: formData.currency,
-          seller_id,
+          seller_id: seller_id || undefined,
         }),
       });
 
@@ -74,6 +73,9 @@ export default function AddProduct() {
       }
 
       const result = await response.json();
+      if (result?.data?.seller_id && typeof result.data.seller_id === 'string') {
+        localStorage.setItem('seller_id', result.data.seller_id);
+      }
 
       setSuccess('✅ Product created successfully! Redirecting to dashboard...');
       setFormData({
@@ -89,7 +91,8 @@ export default function AddProduct() {
       }, 2000);
     } catch (err: any) {
       console.error('Error:', err);
-      setError('❌ ' + (err.message || 'An error occurred'));
+      const errorMessage = (err?.message || '').replace(/^Error:\s*/i, '').trim();
+      setError('❌ ' + (errorMessage || 'An error occurred while creating the product'));
     } finally {
       setLoading(false);
     }
