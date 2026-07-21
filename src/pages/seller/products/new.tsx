@@ -29,7 +29,22 @@ export default function AddProduct() {
     setSuccess('');
 
     try {
+      // Validate form data
+      if (!formData.title.trim()) {
+        throw new Error('Product title is required');
+      }
+      if (!formData.description.trim()) {
+        throw new Error('Description is required');
+      }
+      if (!formData.category) {
+        throw new Error('Category is required');
+      }
+      if (!formData.price || parseFloat(formData.price) <= 0) {
+        throw new Error('Valid price is required');
+      }
+
       const seller_id = localStorage.getItem('seller_id') || 'seller_' + Date.now();
+      localStorage.setItem('seller_id', seller_id);
       
       const response = await fetch('/api/products/create', {
         method: 'POST',
@@ -37,17 +52,28 @@ export default function AddProduct() {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          ...formData,
+          title: formData.title.trim(),
+          description: formData.description.trim(),
+          category: formData.category,
           price: parseFloat(formData.price),
+          currency: formData.currency,
           seller_id,
         }),
       });
 
-      const result = await response.json();
-
       if (!response.ok) {
-        throw new Error(result.message || 'Failed to create product');
+        const text = await response.text();
+        let errorMessage = 'Failed to create product';
+        try {
+          const result = JSON.parse(text);
+          errorMessage = result.message || errorMessage;
+        } catch (e) {
+          errorMessage = text || errorMessage;
+        }
+        throw new Error(errorMessage);
       }
+
+      const result = await response.json();
 
       setSuccess('✅ Product created successfully! Redirecting to dashboard...');
       setFormData({
@@ -62,6 +88,7 @@ export default function AddProduct() {
         router.push('/seller/dashboard');
       }, 2000);
     } catch (err: any) {
+      console.error('Error:', err);
       setError('❌ ' + (err.message || 'An error occurred'));
     } finally {
       setLoading(false);
@@ -109,8 +136,6 @@ export default function AddProduct() {
               placeholder="e.g., Handwoven Kente Cloth"
               className="w-full px-4 py-3 border-2 rounded-lg focus:outline-none text-gray-900 placeholder-gray-400 transition-colors"
               style={{ borderColor: '#C18F4C' }}
-              onFocus={(e) => e.target.style.borderColor = '#683837'}
-              onBlur={(e) => e.target.style.borderColor = '#C18F4C'}
               required
             />
           </div>
@@ -125,8 +150,6 @@ export default function AddProduct() {
               placeholder="Tell the story of your product. What makes it special? What materials are used?"
               className="w-full px-4 py-3 border-2 rounded-lg focus:outline-none text-gray-900 placeholder-gray-400 h-32 transition-colors resize-none"
               style={{ borderColor: '#C18F4C' }}
-              onFocus={(e) => e.target.style.borderColor = '#683837'}
-              onBlur={(e) => e.target.style.borderColor = '#C18F4C'}
               required
             />
           </div>
@@ -141,8 +164,6 @@ export default function AddProduct() {
                 onChange={handleChange}
                 className="w-full px-4 py-3 border-2 rounded-lg focus:outline-none text-gray-900 transition-colors"
                 style={{ borderColor: '#C18F4C' }}
-                onFocus={(e) => e.target.style.borderColor = '#683837'}
-                onBlur={(e) => e.target.style.borderColor = '#C18F4C'}
                 required
               >
                 <option value="">Select category...</option>
@@ -167,8 +188,6 @@ export default function AddProduct() {
                 min="0"
                 className="w-full px-4 py-3 border-2 rounded-lg focus:outline-none text-gray-900 placeholder-gray-400 transition-colors"
                 style={{ borderColor: '#C18F4C' }}
-                onFocus={(e) => e.target.style.borderColor = '#683837'}
-                onBlur={(e) => e.target.style.borderColor = '#C18F4C'}
                 required
               />
             </div>
@@ -183,8 +202,6 @@ export default function AddProduct() {
               onChange={handleChange}
               className="w-full px-4 py-3 border-2 rounded-lg focus:outline-none text-gray-900 transition-colors"
               style={{ borderColor: '#C18F4C' }}
-              onFocus={(e) => e.target.style.borderColor = '#683837'}
-              onBlur={(e) => e.target.style.borderColor = '#C18F4C'}
             >
               <option value="USD">USD ($)</option>
               <option value="EUR">EUR (€)</option>
